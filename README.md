@@ -25,6 +25,7 @@ sudo ./new-wordpress-child-theme.sh -t /var/www/domain.com/wwwroot/wp-content/th
 ```
 
 ## Configuration
+- You will be prompted to enter a theme name. Normal practise is 'Theme-child'
 - You will be prompted to enter author information which will be saved in style.css of the child theme.
 
 ## Enjoying This Script?

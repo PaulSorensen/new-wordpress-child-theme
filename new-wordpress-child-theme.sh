@@ -4,7 +4,7 @@
 #  Author      : Paul Sørensen
 #  Website     : https://paulsorensen.io
 #  GitHub      : https://github.com/paulsorensen
-#  Version     : 1.2
+#  Version     : 1.3
 #  Last Update : 27.02.2025
 #
 #  Description:
@@ -25,46 +25,46 @@ set -e
 
 BLUE='\033[38;5;81m'
 NC='\033[0m'
-echo -e "${BLUE}New Wordpress Child Theme by paulsorensen.io${NC}\n"
+echo -e "${BLUE}New WordPress Child Theme by paulsorensen.io${NC}\n"
 
 # Parse command-line arguments
 while getopts "t:" opt; do
     case "$opt" in
-        t) THEME_DIR="$OPTARG" ;;
+        t) PARENT_THEME_DIR="$OPTARG" ;;
         *) echo "Usage: sudo $0 -t <parent_theme_directory>"; exit 1 ;;
     esac
 done
 
-# Ensure the theme directory is provided
-if [ -z "$THEME_DIR" ]; then
-    echo "Error: Theme directory not specified."
+# Ensure the parent theme directory is provided
+if [ -z "$PARENT_THEME_DIR" ]; then
+    echo "Error: Parent theme directory not specified."
     echo "Use -t <parent_theme_directory>."
-    echo "Example: sudo ./new-wordpress-child-theme.sh -t /var/www/paulsorensen.io/wwwroot/wp-content/themes/neve"
+    echo "Example: sudo ./new-wordpress-child-theme.sh -t /var/www/domain.com/wwwroot/wp-content/themes/ParentTheme"
     exit 1
 fi
 
-# Ensure the theme directory exists
-if [ ! -d "$THEME_DIR" ]; then
-    echo "Error: Specified theme directory does not exist: $THEME_DIR"
+# Ensure the parent theme directory exists
+if [ ! -d "$PARENT_THEME_DIR" ]; then
+    echo "Error: Specified parent theme directory does not exist: $PARENT_THEME_DIR"
     exit 1
 fi
 
-# Extract the theme name from the provided path
-THEME_NAME=$(basename "$THEME_DIR")
+# Extract the parent theme name from the provided path
+THEME_NAME=$(basename "$PARENT_THEME_DIR")
 
-# Capitalize the first letter of the theme name
-THEME_NAME_FORMATTED=$(echo "$THEME_NAME" | sed -E 's/(^|_)([a-z])/\U\2/g' | tr '-' ' ')
+# Prompt user for the child theme name
+read -p "Please enter a name for your child theme (it is recommended to end with '-child'. Eg. Theme-child): " CHILD_THEME_NAME
 
-# Define child theme directory
-CHILD_THEME_DIR="$(dirname "$THEME_DIR")/${THEME_NAME}-child"
+# Define child theme directory based on user input
+CHILD_THEME_DIR="$(dirname "$PARENT_THEME_DIR")/${CHILD_THEME_NAME}"
 
-# Check if the child theme already exists
+# Check if the user-defined child theme already exists
 if [ -d "$CHILD_THEME_DIR" ]; then
-    echo "Error: Child theme '${THEME_NAME}-child' already exists."
+    echo "Error: Child theme '${CHILD_THEME_NAME}' already exists."
     exit 1
 fi
 
-# Prompt user for author information
+# Prompt user for additional details
 read -p "Enter Theme URI (Click 'ENTER' to leave empty): " THEME_URL
 read -p "Enter Author Name (Click 'ENTER' to leave empty): " THEME_AUTHOR
 read -p "Enter Author URI (Click 'ENTER' to leave empty): " THEME_AUTHOR_URI
@@ -74,10 +74,24 @@ mkdir -p "$CHILD_THEME_DIR"
 
 echo "Creating child theme at: $CHILD_THEME_DIR"
 
+# Properly format Theme Name for style.css
+format_theme_name() {
+    echo "$1" | sed -E '
+        s/[-_]+/ /g;                      # Replace dashes and underscores with a single space
+        s/([a-z])([A-Z0-9])/\1 \2/g;      # Add space between lowercase and uppercase/number (if needed)
+        s/ +/ /g;                         # Collapse multiple spaces into one
+        s/(^|[[:space:]])([a-z])/\1\U\2/g # Capitalize first letter of each word
+    ' | sed 's/^ *//;s/ *$//'             # Trim leading/trailing spaces
+}
+
+# Apply proper formatting for `Theme Name` and `Description`
+CHILD_THEME_NAME_FORMATTED=$(format_theme_name "$CHILD_THEME_NAME")
+THEME_NAME_FORMATTED=$(format_theme_name "$THEME_NAME")
+
 # Create style.css file for the child theme
 cat <<EOL > "$CHILD_THEME_DIR/style.css"
 /*
-Theme Name: ${THEME_NAME_FORMATTED} Child
+Theme Name: ${CHILD_THEME_NAME_FORMATTED}
 Theme URI: ${THEME_URL}
 Author: ${THEME_AUTHOR}
 Author URI: ${THEME_AUTHOR_URI}
@@ -86,26 +100,25 @@ Template: ${THEME_NAME}
 Version: 1.0
 License: GNU General Public License v3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.txt
-Text Domain: ${THEME_NAME}-child
+Text Domain: ${CHILD_THEME_NAME}
 */
 EOL
 
 # Create functions.php file for the child theme
 cat <<EOL > "$CHILD_THEME_DIR/functions.php"
 <?php
-/**
- * Enqueue parent theme styles
- */
-function ${THEME_NAME}_child_enqueue_styles() {
-    wp_enqueue_style( '${THEME_NAME}-parent-style', get_template_directory_uri() . '/style.css' );
+function ${CHILD_THEME_NAME//-/_}_enqueue_styles() {
+    wp_enqueue_style('${THEME_NAME}-parent-style', get_template_directory_uri() . '/style.css');
+    wp_enqueue_style('${CHILD_THEME_NAME}-style', get_stylesheet_directory_uri() . '/style.css', array('${THEME_NAME}-parent-style'), wp_get_theme()->get('Version'));
 }
-add_action( 'wp_enqueue_scripts', '${THEME_NAME}_child_enqueue_styles' );
+add_action('wp_enqueue_scripts', '${CHILD_THEME_NAME//-/_}_enqueue_styles');
+?>
 EOL
 
 # Copy screenshot.png if it exists in the parent theme
 for EXT in png jpg jpeg; do
-    if [ -f "$THEME_DIR/screenshot.$EXT" ]; then
-        cp "$THEME_DIR/screenshot.$EXT" "$CHILD_THEME_DIR/"
+    if [ -f "$PARENT_THEME_DIR/screenshot.$EXT" ]; then
+        cp "$PARENT_THEME_DIR/screenshot.$EXT" "$CHILD_THEME_DIR/"
         break
     fi
 done
@@ -115,4 +128,4 @@ chown -R www-data:www-data "$CHILD_THEME_DIR"
 find "$CHILD_THEME_DIR" -type d -exec chmod 750 {} \;
 find "$CHILD_THEME_DIR" -type f -exec chmod 640 {} \;
 
-echo "Child theme '${THEME_NAME_FORMATTED} Child' successfully created!"
+echo "Child theme '${CHILD_THEME_NAME}' successfully created!"
