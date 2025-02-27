@@ -4,7 +4,7 @@
 #  Author      : Paul Sørensen
 #  Website     : https://paulsorensen.io
 #  GitHub      : https://github.com/paulsorensen
-#  Version     : 1.3
+#  Version     : 1.4
 #  Last Update : 27.02.2025
 #
 #  Description:
@@ -55,12 +55,18 @@ THEME_NAME=$(basename "$PARENT_THEME_DIR")
 # Prompt user for the child theme name
 read -p "Please enter a name for your child theme (it is recommended to end with '-child'. Eg. Theme-child): " CHILD_THEME_NAME
 
-# Define child theme directory based on user input
-CHILD_THEME_DIR="$(dirname "$PARENT_THEME_DIR")/${CHILD_THEME_NAME}"
+# Function to transform input into folder-friendly name (lowercase, only dashes allowed, spaces removed)
+format_folder_name() {
+    echo "$1" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]//g' | sed 's/-\+/-/g' | sed 's/^-//;s/-$//'
+}
+
+# Define child theme folder name and path using the transformation
+CHILD_THEME_FOLDER_NAME=$(format_folder_name "$CHILD_THEME_NAME")
+CHILD_THEME_PATH="$(dirname "$PARENT_THEME_DIR")/${CHILD_THEME_FOLDER_NAME}"
 
 # Check if the user-defined child theme already exists
-if [ -d "$CHILD_THEME_DIR" ]; then
-    echo "Error: Child theme '${CHILD_THEME_NAME}' already exists."
+if [ -d "$CHILD_THEME_PATH" ]; then
+    echo "Error: Child theme folder '${CHILD_THEME_FOLDER_NAME}' already exists."
     exit 1
 fi
 
@@ -70,9 +76,9 @@ read -p "Enter Author Name (Click 'ENTER' to leave empty): " THEME_AUTHOR
 read -p "Enter Author URI (Click 'ENTER' to leave empty): " THEME_AUTHOR_URI
 
 # Create the child theme directory
-mkdir -p "$CHILD_THEME_DIR"
+mkdir -p "$CHILD_THEME_PATH"
 
-echo "Creating child theme at: $CHILD_THEME_DIR"
+echo "Creating child theme at: $CHILD_THEME_PATH"
 
 # Properly format Theme Name for style.css
 format_theme_name() {
@@ -89,7 +95,7 @@ CHILD_THEME_NAME_FORMATTED=$(format_theme_name "$CHILD_THEME_NAME")
 THEME_NAME_FORMATTED=$(format_theme_name "$THEME_NAME")
 
 # Create style.css file for the child theme
-cat <<EOL > "$CHILD_THEME_DIR/style.css"
+cat <<EOL > "$CHILD_THEME_PATH/style.css"
 /*
 Theme Name: ${CHILD_THEME_NAME_FORMATTED}
 Theme URI: ${THEME_URL}
@@ -100,32 +106,32 @@ Template: ${THEME_NAME}
 Version: 1.0
 License: GNU General Public License v3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.txt
-Text Domain: ${CHILD_THEME_NAME}
+Text Domain: ${CHILD_THEME_FOLDER_NAME}
 */
 EOL
 
 # Create functions.php file for the child theme
-cat <<EOL > "$CHILD_THEME_DIR/functions.php"
+cat <<EOL > "$CHILD_THEME_PATH/functions.php"
 <?php
-function ${CHILD_THEME_NAME//-/_}_enqueue_styles() {
+function ${CHILD_THEME_FOLDER_NAME//-/_}_enqueue_styles() {
     wp_enqueue_style('${THEME_NAME}-parent-style', get_template_directory_uri() . '/style.css');
-    wp_enqueue_style('${CHILD_THEME_NAME}-style', get_stylesheet_directory_uri() . '/style.css', array('${THEME_NAME}-parent-style'), wp_get_theme()->get('Version'));
+    wp_enqueue_style('${CHILD_THEME_FOLDER_NAME}-style', get_stylesheet_directory_uri() . '/style.css', array('${THEME_NAME}-parent-style'), wp_get_theme()->get('Version'));
 }
-add_action('wp_enqueue_scripts', '${CHILD_THEME_NAME//-/_}_enqueue_styles');
+add_action('wp_enqueue_scripts', '${CHILD_THEME_FOLDER_NAME//-/_}_enqueue_styles');
 ?>
 EOL
 
 # Copy screenshot.png if it exists in the parent theme
 for EXT in png jpg jpeg; do
     if [ -f "$PARENT_THEME_DIR/screenshot.$EXT" ]; then
-        cp "$PARENT_THEME_DIR/screenshot.$EXT" "$CHILD_THEME_DIR/"
+        cp "$PARENT_THEME_DIR/screenshot.$EXT" "$CHILD_THEME_PATH/"
         break
     fi
 done
 
 echo "Setting ownership and permissions..."
-chown -R www-data:www-data "$CHILD_THEME_DIR"
-find "$CHILD_THEME_DIR" -type d -exec chmod 750 {} \;
-find "$CHILD_THEME_DIR" -type f -exec chmod 640 {} \;
+chown -R www-data:www-data "$CHILD_THEME_PATH"
+find "$CHILD_THEME_PATH" -type d -exec chmod 750 {} \;
+find "$CHILD_THEME_PATH" -type f -exec chmod 640 {} \;
 
-echo "Child theme '${CHILD_THEME_NAME}' successfully created!"
+echo -e "${BLUE}Child theme '${CHILD_THEME_NAME}' successfully created with folder name '${CHILD_THEME_FOLDER_NAME}'!${NC}"
