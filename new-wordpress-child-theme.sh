@@ -4,7 +4,7 @@
 #  Author      : Paul Sørensen
 #  Website     : https://paulsorensen.io
 #  GitHub      : https://github.com/paulsorensen
-#  Version     : 1.1
+#  Version     : 1.2
 #  Last Update : 27.02.2025
 #
 #  Description:
@@ -51,6 +51,11 @@ fi
 
 # Extract the theme name from the provided path
 THEME_NAME=$(basename "$THEME_DIR")
+
+# Capitalize the first letter of the theme name
+THEME_NAME_FORMATTED=$(echo "$THEME_NAME" | sed -E 's/(^|_)([a-z])/\U\2/g' | tr '-' ' ')
+
+# Define child theme directory
 CHILD_THEME_DIR="$(dirname "$THEME_DIR")/${THEME_NAME}-child"
 
 # Check if the child theme already exists
@@ -72,11 +77,11 @@ echo "Creating child theme at: $CHILD_THEME_DIR"
 # Create style.css file for the child theme
 cat <<EOL > "$CHILD_THEME_DIR/style.css"
 /*
-Theme Name: ${THEME_NAME}-child
+Theme Name: ${THEME_NAME_FORMATTED} Child
 Theme URI: ${THEME_URL}
 Author: ${THEME_AUTHOR}
 Author URI: ${THEME_AUTHOR_URI}
-Description: Child theme for ${THEME_NAME}
+Description: Child theme for ${THEME_NAME_FORMATTED}
 Template: ${THEME_NAME}
 Version: 1.0
 License: GNU General Public License v3 or later
@@ -110,4 +115,4 @@ chown -R www-data:www-data "$CHILD_THEME_DIR"
 find "$CHILD_THEME_DIR" -type d -exec chmod 750 {} \;
 find "$CHILD_THEME_DIR" -type f -exec chmod 640 {} \;
 
-echo "Child theme '${THEME_NAME}-child' successfully created!"
+echo "Child theme '${THEME_NAME_FORMATTED} Child' successfully created!"
