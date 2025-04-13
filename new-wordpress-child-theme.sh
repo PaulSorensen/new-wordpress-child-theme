@@ -1,23 +1,19 @@
 #!/bin/bash
 ################################################################################
-#  Script Name : New WordPress Child Theme
-#  Author      : Paul Sørensen
-#  Website     : https://paulsorensen.io
-#  GitHub      : https://github.com/paulsorensen
-#  Version     : 1.4
-#  Last Update : 27.02.2025
+# Script Name   : New WordPress Child Theme
+# Author        : Paul Sørensen
+# Website       : https://paulsorensen.io
+# GitHub        : https://github.com/paulsorensen
+# Version       : 1.4
+# Last Modified : 2025/04/14 01:17:45
 #
-#  Description:
-#  Creates a child theme based on an existing WordPress theme.
+# Description:
+# Creates a child theme based on an existing WordPress theme.
 #
-#  Usage:
-#  sudo ./new-wordpress-child-theme.sh -t <parent_theme_directory>
+# Usage: Refer to README.md for details on how to use this script.
 #
-#  Example:
-#  sudo ./new-wordpress-child-theme.sh -t /var/www/domain.com/wwwroot/wp-content/themes/ParentTheme
-#
-#  If you found this script useful, a small tip is appreciated ❤️
-#  https://buymeacoffee.com/paulsorensen
+# If you found this script useful, a small tip is appreciated ❤️
+# https://buymeacoffee.com/paulsorensen
 ################################################################################
 
 # Exit immediately if a command exits with a non-zero status
